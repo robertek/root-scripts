@@ -1,0 +1,70 @@
+#!/bin/sh
+
+ROOT=/boot
+INITRAMFS="$ROOT/initramfs"
+SPLASH_DIR="etc/splash"
+INITRAM_DIR=`mktemp -d -t initramfs.XXX`
+
+DIRS="	sys 
+	proc 
+	dev
+	etc 
+	bin 
+	lib64 
+	newroot 
+	sbin 
+	usr/lib64 
+	usr/bin 
+	usr/sbin
+	lib/firmware/i915
+	"
+
+BINS="	/sbin/zpool
+	/sbin/mount.zfs
+	/sbin/zfs
+	/bin/busybox
+	/sbin/fbcondecor_helper
+	/usr/bin/tmux
+	/sbin/fdisk
+	/usr/sbin/mkfs.fat
+	/lib/firmware/i915/skl_dmc_ver1_26.bin
+	/lib/firmware/i915/skl_guc_ver4.bin
+	/lib64/ld-linux-x86-64.so.2
+	"
+
+echo "composing initramfs in $INITRAM_DIR"
+
+for dir in $DIRS
+do
+	mkdir -p $INITRAM_DIR/$dir
+done
+
+for lib in `lddtree $BINS 2>/dev/null | grep -v interpreter | cut -d'>' -f2 | sort -u`
+do
+  cp -L $lib ${INITRAM_DIR}$lib
+done
+
+for bin in $BINS
+do
+  cp -L $bin ${INITRAM_DIR}$bin
+done
+
+# init
+cp /root/bin/init.tpl $INITRAM_DIR/init
+chmod +x $INITRAM_DIR/init
+
+# splash
+mkdir $INITRAM_DIR/$SPLASH_DIR
+mkdir -p $INITRAM_DIR/lib64/splash/proc
+mkdir -p $INITRAM_DIR/lib64/splash/sys
+cp -r /$SPLASH_DIR/natural_gentoo $INITRAM_DIR/$SPLASH_DIR
+cp /$SPLASH_DIR/luxisri.ttf $INITRAM_DIR/$SPLASH_DIR
+
+# backup
+echo "backing up $INITRAMFS"
+mv $INITRAMFS $INITRAMFS.old
+
+# create
+echo "creating new $INITRAMFS"
+cd $INITRAM_DIR
+find . | cpio --quiet -o -H newc > $INITRAMFS
