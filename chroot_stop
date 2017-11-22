@@ -3,24 +3,16 @@
 BASE_DIR="."
 [ -z $1 ] || BASE_DIR=$1
 
+PORTAGE_DIR="/var/lib/portage/gentoo"
+PORTAGE_TMP="/var/tmp/portage"
+DISTFILES_DIR="/var/lib/portage/distfiles"
+SRC_DIR="/usr/src"
+
 [ -d $BASE_DIR/proc ] || { echo "probably no rootfs!!!" ; exit 1; }
 
 umount $BASE_DIR/proc
-umount -l $BASE_DIR/dev
-umount -l $BASE_DIR/sys
-umount $BASE_DIR/var/lib/portage/gentoo
-umount $BASE_DIR/var/lib/portage/distfiles
-umount $BASE_DIR/var/tmp/portage
-
-if [[ -L $BASE_DIR/var/lib/portage/distfiles.old ]]
-then
-	rmdir $BASE_DIR/var/lib/portage/distfiles
-	mv $BASE_DIR/var/lib/portage/distfiles.old $BASE_DIR/var/lib/portage/distfiles
-fi
-
-if [[ -L $BASE_DIR/usr/src.old ]]
-then
-	umount $BASE_DIR/usr/src
-	rmdir $BASE_DIR/usr/src
-	mv $BASE_DIR/usr/src.old $BASE_DIR/usr/src
-fi
+umount $BASE_DIR/dev
+umount $BASE_DIR/sys
+umount $BASE_DIR/$PORTAGE_DIR
+umount $BASE_DIR/$DISTFILES_DIR
+umount $BASE_DIR/$PORTAGE_TMP

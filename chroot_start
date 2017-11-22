@@ -5,35 +5,23 @@ BASE_DIR="."
 
 PORTAGE_DIR="$BASE_DIR/var/lib/portage/gentoo"
 PORTAGE_FILE="$PORTAGE_DIR.xz.sqfs"
-DISTFILES_SRC="/rpool/GENTOO_data/distfiles"
-DISTFILES_DIR="$BASE_DIR/var/lib/portage/distfiles"
-SRC_DIR="/rpool/GENTOO_data/src"
+DISTFILES_DIR="/var/lib/portage/distfiles"
+PORTAGE_TMP="/var/tmp/portage"
+SRC_DIR="/usr/src"
 
 [ -d $BASE_DIR/proc ] || { echo "probably no rootfs!!!" ; exit 1; }
 
 mount -t proc /proc $BASE_DIR/proc
-mount --rbind /dev $BASE_DIR/dev
-mount --rbind /sys $BASE_DIR/sys
+mount --bind /dev $BASE_DIR/dev
+mount --bind /sys $BASE_DIR/sys
 
-if [[ -L $DISTFILES_DIR ]]
-then
-	mv $DISTFILES_DIR $DISTFILES_DIR.old
-	mkdir $DISTFILES_DIR
-fi
+mount --bind $DISTFILES_DIR $BASE_DIR/$DISTFILES_DIR
+mount --bind $PORTAGE_TMP $BASE_DIR/$PORTAGE_TMP
+mount --bind $SRC_DIR $BASE_DIR/$SRC_DIR
 
 if [[ -e $PORTAGE_FILE ]]
 then
 	mount -t squashfs $PORTAGE_FILE $PORTAGE_DIR
-fi
-
-mount --bind $DISTFILES_SRC $DISTFILES_DIR
-mount --bind /var/tmp/portage $BASE_DIR/var/tmp/portage
-
-if [[ -L $BASE_DIR/usr/src ]]
-then
-	mv $BASE_DIR/usr/src $BASE_DIR/usr/src.old
-	mkdir $BASE_DIR/usr/src
-	mount --rbind $SRC_DIR $BASE_DIR/usr/src
 fi
 
 echo "run:"
