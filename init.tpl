@@ -30,16 +30,23 @@ fi
 
 #zfs
 ROOT=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "root=" | $CUT -d"=" -f2`
-if [[ -z $ROOT ]]
+RPOOL=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "rpool=" | $CUT -d"=" -f2`
+
+[[ -z $RPOOL ]] && RPOOL=`$ECHO $ROOT | $CUT -d"/" -f1`
+[[ -z $RPOOL ]] && RPOOL="rpool"
+
+$ECHO "Importing: $RPOOL"
+
+if [[ -f /etc/zpool.cache ]]
 then
-	RPOOL=rpool
-	$ZPOOL import -N $RPOOL
-	ROOT=`$ZPOOL get -H bootfs $RPOOL | $TR -s "\t" ":" | $CUT -d: -f3`
+	$ZPOOL import -c /etc/zpool.cache -N $RPOOL
 else
-	RPOOL=`$ECHO $ROOT | $CUT -d"/" -f1`
 	$ZPOOL import -N $RPOOL
 fi
 
+[[ -z $ROOT ]] && ROOT=`$ZPOOL get -H bootfs $RPOOL | $TR -s "\t" ":" | $CUT -d: -f3`
+
+$ECHO "Mounting: $ROOT"
 /sbin/mount.zfs $ROOT /newroot
 
 #rescue shell if mount fail
@@ -51,4 +58,4 @@ $UMOUNT /proc
 $UMOUNT /dev
 
 #root switch
-exec $SWITCH_ROOT /newroot /sbin/init 3
+exec $SWITCH_ROOT /newroot /usr/lib/systemd/systemd

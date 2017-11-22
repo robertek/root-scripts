@@ -1,7 +1,8 @@
 #!/bin/sh
 
 ROOT=/boot
-INITRAMFS="$ROOT/initramfs"
+VERSION=`equery -q list zfs | cut -d"-" -f3`
+INITRAMFS="$ROOT/initramfs-$VERSION"
 SPLASH_DIR="etc/splash"
 INITRAM_DIR=`mktemp -d -t initramfs.XXX`
 
@@ -41,12 +42,15 @@ done
 
 for lib in `lddtree $BINS 2>/dev/null | grep -v interpreter | cut -d'>' -f2 | sort -u`
 do
-  cp -L $lib ${INITRAM_DIR}$lib
+  cp -L $lib ${INITRAM_DIR}/$lib
 done
+
+# fix gcc link
+cp -L /usr/lib64/gcc/x86_64-pc-linux-gnu/5.4.0/libgcc_s.so.1 $INITRAM_DIR/lib64/
 
 for bin in $BINS
 do
-  cp -L $bin ${INITRAM_DIR}$bin
+  cp -L $bin $INITRAM_DIR/$bin
 done
 
 # init
@@ -59,6 +63,9 @@ mkdir -p $INITRAM_DIR/lib64/splash/proc
 mkdir -p $INITRAM_DIR/lib64/splash/sys
 cp -r /$SPLASH_DIR/natural_gentoo $INITRAM_DIR/$SPLASH_DIR
 cp /$SPLASH_DIR/luxisri.ttf $INITRAM_DIR/$SPLASH_DIR
+
+# zpool cache
+cp /etc/zfs/zpool.cache $INITRAM_DIR/etc/
 
 # backup
 echo "backing up $INITRAMFS"
