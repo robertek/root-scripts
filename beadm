@@ -54,6 +54,7 @@ __usage() {
   echo "  ${NAME} rename <origBeName> <newBeName>"
   echo "  ${NAME} mount <beName> [mountpoint]"
   echo "  ${NAME} { umount | unmount } [-f] <beName>"
+  echo "  ${NAME} chroot <beName>"
   exit 1
 }
 
