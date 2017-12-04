@@ -1,0 +1,7 @@
+#!/bin/bash
+
+[[ -x copy-builtin ]] || echo "no spl/zfs directory"
+
+./autogen.sh
+./configure --with-linux=/usr/src/linux --with-linux-obj=/usr/src/linux --enable-linux-builtin
+./copy-builtin ../linux
