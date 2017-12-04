@@ -501,7 +501,7 @@ case ${1} in
       # do not change root (/) mounted boot environment mountpoint
       if [ "${ROOTFS}" != "${POOL}/${BEDS}/${2}" ]
       then
-        TMPMNT=$( mktemp -d -p /mnt "BE-${2}.XXX" )
+        TMPMNT=$( mktemp -d -p /tmp "BE-${2}.XXX" )
         if ! mkdir -p "${TMPMNT}" 2> /dev/null
         then
           echo "ERROR: Cannot create '${TMPMNT}' directory"
@@ -739,7 +739,7 @@ EOF
   (mount) # ------------------------------------------------------------
     if [ ${#} -eq 2 ]
     then
-      TARGET=$( mktemp -d -p /mnt "BE-${2}.XXX" )
+      TARGET=$( mktemp -d -p /tmp "BE-${2}.XXX" )
     elif [ ${#} -eq 3 ]
     then
       TARGET=${3}
@@ -799,52 +799,6 @@ EOF
     echo "${TARGET}"
     ;;
 
-  (bind) # -------------------------------------------------------------
-    if [ ${#} -gt 1 ]
-    then
-      TARGET=${2}
-    else
-      __usage
-    fi
-    shift 2
-    __be_exist "${POOL}/${BEDS}/${TARGET}"
-    if __be_mounted "${POOL}/${BEDS}/${TARGET}"
-    then
-      MNT=$(__be_findmnt "${POOL}/${BEDS}/${TARGET}")
-      if [ ${#} -eq 0 ]
-      then
-        set -- ${BIND_COMPS:-proc sys dev tmp}
-      fi
-      comp=${1}
-      while shift
-      do
-        case ${comp} in
-          (proc)
-            mount -t proc proc "${MNT}/proc"
-          ;;
-          (sys|dev)
-            mount --rbind "/${comp}" "${MNT}/${comp}"
-            mount --make-rslave "${MNT}/${comp}"
-          ;;
-          (boot)
-            if ! findmnt -f /boot > /dev/null
-            then
-              mount /boot
-            fi
-            mount --bind /boot "${MNT}/boot"
-          ;;
-          (*)
-            mount --bind "/${comp}" "${MNT}/${comp}"
-          ;;
-        esac
-        comp=${1}
-      done
-    else
-      echo "ERROR: '${TARGET}' is not mounted"
-      exit 1
-    fi
-    ;;
-
   (chroot) # -------------------------------------------------------------------
     if [ ${#} -eq 2 ]
     then
@@ -856,58 +810,23 @@ EOF
     if __be_mounted "${POOL}/${BEDS}/${2}"
     then
       MNT=$(__be_findmnt "${POOL}/${BEDS}/${TARGET}")
-      TMPRC=$(mktemp --tmpdir=/tmp "BE-${2}.XXX")
-      if [ -r "${RCFILE:=$HOME/.bashrc}" ]
-      then
-        cp "${RCFILE}" "${TMPRC}"
-      else
-        echo "Warning: unable to read ${RCFILE}"
-      fi
-      cat >> "${TMPRC}" << EOF
-        env-update
-        . /etc/profile
-        export PS1="[$TARGET] \$PS1"
-EOF
-      ionice -c3 -p $$ | sed 's/^/    /'
-      renice -n 20 -p $$ | sed 's/^/    /'
-      /usr/bin/chroot "${MNT}" "${SHELL:-/bin/bash}" --rcfile "${TMPRC}"
-      rm "${TMPRC}"
-    else
-      echo "ERROR: '${TARGET}' is not mounted"
-      exit 1
-    fi
-    ;;
-
-  (ubind|unbind) # -------------------------------------------------------------
-    if [ ${#} -gt 1 ]
-    then
-      TARGET=${2}
-    else
-      __usage
-    fi
-    shift 2
-    __be_exist "${POOL}/${BEDS}/${TARGET}"
-    if __be_mounted "${POOL}/${BEDS}/${TARGET}"
-    then
-      MNT=$(__be_findmnt "${POOL}/${BEDS}/${TARGET}")
-      if [ ${#} -eq 0 ]
-      then
-        #shellcheck disable=SC2086
-        set -- ${BIND_COMPS:-proc sys dev tmp}
-      fi
-      comp=${1}
-      while shift
+      BINDS=""
+      for BIND in $BEADM_BINDS
       do
-        case ${comp} in
-          (proc|sys|dev|tmp)
-            umount -l "${MNT}/${comp}"
-          ;;
-          (*)
-            umount "${MNT}/${comp}"
-          ;;
-        esac
-        comp=${1}
+        BINDS="--bind=$BIND $BINDS"
       done
+      # hack: nspawn do not support loop mounts
+      PORTAGE_DIR="$MNT/var/lib/portage/gentoo"
+      PORTAGE_FILE="$PORTAGE_DIR.xz.sqfs"
+      if [[ -e $PORTAGE_FILE ]]
+      then
+        mount -t squashfs $PORTAGE_FILE $PORTAGE_DIR
+      fi
+      systemd-nspawn -D $MNT $BINDS /bin/zsh
+      if [[ -e $PORTAGE_FILE ]]
+      then
+        umount $PORTAGE_DIR
+      fi
     else
       echo "ERROR: '${TARGET}' is not mounted"
       exit 1
