@@ -11,6 +11,8 @@ SRC_DIR="/usr/src"
 [ -d $BASE_DIR/proc ] || { echo "probably no rootfs!!!" ; exit 1; }
 
 umount $BASE_DIR/proc
+umount $BASE_DIR/dev/pts
+umount $BASE_DIR/dev/shm
 umount $BASE_DIR/dev
 umount $BASE_DIR/sys
 umount $BASE_DIR/$PORTAGE_DIR

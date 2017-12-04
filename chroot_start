@@ -13,6 +13,8 @@ SRC_DIR="/usr/src"
 
 mount -t proc /proc $BASE_DIR/proc
 mount --bind /dev $BASE_DIR/dev
+mount --bind /dev/pts $BASE_DIR/dev/pts
+mount --bind /dev/shm $BASE_DIR/dev/shm
 mount --bind /sys $BASE_DIR/sys
 
 mount --bind $DISTFILES_DIR $BASE_DIR/$DISTFILES_DIR
