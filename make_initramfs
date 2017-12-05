@@ -4,20 +4,29 @@ ROOT=/boot
 VERSION=`equery -q list zfs | cut -d"-" -f3`
 INITRAMFS="$ROOT/initramfs-$VERSION"
 SPLASH_DIR="etc/splash"
-INITRAM_DIR=`mktemp -d -t initramfs.XXX`
 
-DIRS="	sys 
-	proc 
+if [ -z $1 ]
+then
+	CREATE=1
+	INITRAM_DIR=`mktemp -d -t initramfs.XXX`
+else
+	CREATE=0
+	INITRAM_DIR=$1
+fi
+
+DIRS="	sys
+	proc
 	dev
-	etc 
-	bin 
-	lib64 
-	newroot 
-	sbin 
-	usr/lib64 
-	usr/bin 
+	etc
+	bin
+	lib
+	lib64
+	newroot
+	sbin
+	usr/lib
+	usr/lib64
+	usr/bin
 	usr/sbin
-	lib/firmware/i915
 	"
 
 BINS="	/sbin/zpool
@@ -25,32 +34,47 @@ BINS="	/sbin/zpool
 	/sbin/zfs
 	/bin/busybox
 	/sbin/fbcondecor_helper
-	/usr/bin/tmux
 	/sbin/fdisk
 	/usr/sbin/mkfs.fat
-	/lib/firmware/i915/skl_dmc_ver1_26.bin
+	"
+
+EXTRA=" /lib/firmware/i915/skl_dmc_ver1_26.bin
 	/lib/firmware/i915/skl_guc_ver4.bin
-	/lib64/ld-linux-x86-64.so.2
 	"
 
 echo "composing initramfs in $INITRAM_DIR"
+
+if [ $CREATE == 0 ]
+then
+	echo "Remove old initramfs in $INITRAM_DIR? (y/n)"
+	read ANS
+	if [ $ANS == "y" ]
+	then
+		rm -r $INITRAM_DIR
+	fi
+fi
 
 for dir in $DIRS
 do
 	mkdir -p $INITRAM_DIR/$dir
 done
 
-for lib in `lddtree $BINS 2>/dev/null | grep -v interpreter | cut -d'>' -f2 | sort -u`
+for bin in `lddtree -l $BINS 2>/dev/null | sort -u`
 do
-  cp -L $lib ${INITRAM_DIR}/$lib
+	cp -L $bin ${INITRAM_DIR}/$bin
 done
 
 # fix gcc link
-cp -L /usr/lib64/gcc/x86_64-pc-linux-gnu/5.4.0/libgcc_s.so.1 $INITRAM_DIR/lib64/
+cp -L `find /usr/lib/gcc -name "libgcc_s.so.1" | head -n1` $INITRAM_DIR/lib64/
 
-for bin in $BINS
+# add /dev/console
+mknod $INITRAM_DIR/dev/console c 5 1 2>/dev/null
+
+for bin in $EXTRA
 do
-  cp -L $bin $INITRAM_DIR/$bin
+	[ -e $bin ] || continue
+	mkdir -p $INITRAM_DIR/`dirname $bin`
+	cp -L $bin $INITRAM_DIR/$bin
 done
 
 # init
@@ -58,20 +82,28 @@ cp /root/bin/init.tpl $INITRAM_DIR/init
 chmod +x $INITRAM_DIR/init
 
 # splash
-mkdir $INITRAM_DIR/$SPLASH_DIR
-mkdir -p $INITRAM_DIR/lib64/splash/proc
-mkdir -p $INITRAM_DIR/lib64/splash/sys
-cp -r /$SPLASH_DIR/natural_gentoo $INITRAM_DIR/$SPLASH_DIR
-cp /$SPLASH_DIR/luxisri.ttf $INITRAM_DIR/$SPLASH_DIR
+if [ -d /$SPLASH_DIR ]
+then
+	mkdir $INITRAM_DIR/$SPLASH_DIR
+	mkdir -p $INITRAM_DIR/lib64/splash/proc
+	mkdir -p $INITRAM_DIR/lib64/splash/sys
+	cp -r /$SPLASH_DIR/natural_gentoo $INITRAM_DIR/$SPLASH_DIR
+	cp /$SPLASH_DIR/luxisri.ttf $INITRAM_DIR/$SPLASH_DIR
+fi
 
 # zpool cache
-cp /etc/zfs/zpool.cache $INITRAM_DIR/etc/
+cp /etc/zfs/*.cache $INITRAM_DIR/etc/
 
-# backup
-echo "backing up $INITRAMFS"
-mv $INITRAMFS $INITRAMFS.old
+if [ $CREATE == 1 ]
+then
+	# backup
+	echo "backing up $INITRAMFS"
+	mv $INITRAMFS $INITRAMFS.old
 
-# create
-echo "creating new $INITRAMFS"
-cd $INITRAM_DIR
-find . | cpio --quiet -o -H newc > $INITRAMFS
+	# create
+	echo "creating new $INITRAMFS"
+	cd $INITRAM_DIR
+	find . | cpio --quiet -o -H newc > $INITRAMFS
+	cd
+	rm -r $INITRAM_DIR
+fi

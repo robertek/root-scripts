@@ -37,9 +37,9 @@ RPOOL=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "rpool=" | $CUT -d"=" -f2`
 
 $ECHO "Importing: $RPOOL"
 
-if [[ -f /etc/zpool.cache ]]
+if [[ -f /etc/$RPOOL.cache ]]
 then
-	$ZPOOL import -c /etc/zpool.cache -N $RPOOL
+	$ZPOOL import -c /etc/$RPOOL.cache -N $RPOOL
 else
 	$ZPOOL import -N $RPOOL
 fi
