@@ -8,7 +8,7 @@ TIMEOUT="120"
 REMOTE_IP="192.168.10.10"
 REMOTE_HOST="root@$REMOTE_IP"
 
-REMOTE_DATASET="bpool/BACKUP/notebook"
+REMOTE_DATASET="mpool/BACKUP/robert-home"
 LOCAL_DATASET="rpool/HOME"
 LAST_BACKUP="$LOCAL_DATASET@backup-done"
 NEW_BACKUP_SNAP="backup-`date +%Y%m%d_%H%M`"
@@ -21,7 +21,7 @@ ping -c1 $REMOTE_IP || exit 1
 $ZFS snapshot $NEW_BACKUP
 
 # send new snapshot
-$ZFS send -i $LAST_BACKUP $NEW_BACKUP | $SSH $REMOTE_HOST $REMOTE_ZFS receive -Fduv $REMOTE_DATASET
+$ZFS send -i $LAST_BACKUP $NEW_BACKUP | $SSH $REMOTE_HOST $REMOTE_ZFS receive -F $REMOTE_DATASET
 
 # check if done
 $SSH $REMOTE_HOST $REMOTE_ZFS list -t snapshot | grep $NEW_BACKUP_SNAP >/dev/null 2>&1
