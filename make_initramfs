@@ -80,17 +80,6 @@ done
 cp /root/bin/init.tpl $INITRAM_DIR/init
 chmod +x $INITRAM_DIR/init
 
-# splash
-#if [ -d /$SPLASH_DIR ]
-#then
-#	mkdir $INITRAM_DIR/$SPLASH_DIR
-#	mkdir -p $INITRAM_DIR/lib64/splash/proc
-#	mkdir -p $INITRAM_DIR/lib64/splash/sys
-#	cp -r /$SPLASH_DIR/natural_gentoo $INITRAM_DIR/$SPLASH_DIR
-#	cp /$SPLASH_DIR/luxisri.ttf $INITRAM_DIR/$SPLASH_DIR
-#fi
-
-# zpool cache
 cp /etc/zfs/*.cache $INITRAM_DIR/etc/
 
 if [ $CREATE == 1 ]
