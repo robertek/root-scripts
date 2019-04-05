@@ -37,9 +37,11 @@ BINS="	/sbin/zpool
 	/usr/sbin/mkfs.fat
 	"
 
-EXTRA=" /lib/firmware/i915/skl_dmc_ver1_26.bin
-	/lib/firmware/i915/skl_guc_ver4.bin
-	"
+#EXTRA=" /lib/firmware/i915/skl_dmc_ver1_27.bin
+#	/lib/firmware/i915/skl_guc_ver9_33.bin
+#	/lib/firmware/iwlwifi-8000C-22.ucode
+#	"
+EXTRA=""
 
 echo "composing initramfs in $INITRAM_DIR"
 
