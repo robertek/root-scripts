@@ -6,5 +6,5 @@ EFI_FILE=$EFI_DIR/bootx64.efi
 
 [[ -e $EFI_FILE ]] && cp $EFI_FILE $EFI_FILE.bu
 
-grub-mkimage -O x86_64-efi -o $EFI_FILE -p "" part_gpt fat configfile linux gzio xzio gfxterm efi_gop
+grub-mkimage -O x86_64-efi -o $EFI_FILE -p "" part_gpt fat configfile linux gzio xzio gfxterm efi_gop linux16
 cp /usr/share/grub/unicode.pf2 $EFI_DIR
