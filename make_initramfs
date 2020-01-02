@@ -3,7 +3,7 @@
 ROOT=/boot
 VERSION=`equery -q list zfs | cut -d"-" -f3`
 INITRAMFS="$ROOT/initramfs-$VERSION"
-SPLASH_DIR="etc/splash"
+XZ_OPTS="--check=crc32 --lzma2=dict=512KiB"
 
 if [ -z $1 ]
 then
@@ -37,10 +37,6 @@ BINS="	/sbin/zpool
 	/usr/sbin/mkfs.fat
 	"
 
-#EXTRA=" /lib/firmware/i915/skl_dmc_ver1_27.bin
-#	/lib/firmware/i915/skl_guc_ver9_33.bin
-#	/lib/firmware/iwlwifi-8000C-22.ucode
-#	"
 EXTRA=""
 
 echo "composing initramfs in $INITRAM_DIR"
@@ -78,6 +74,12 @@ do
 	cp -L $bin $INITRAM_DIR/$bin
 done
 
+# populate plymouth if available
+if [ -x /usr/libexec/plymouth/plymouth-populate-initrd ]
+then
+	/usr/libexec/plymouth/plymouth-populate-initrd -t $INITRAM_DIR
+fi
+
 # init
 cp /root/bin/init.tpl $INITRAM_DIR/init
 chmod +x $INITRAM_DIR/init
@@ -93,7 +95,7 @@ then
 	# create
 	echo "creating new $INITRAMFS"
 	cd $INITRAM_DIR
-	find . | cpio --quiet -o -H newc > $INITRAMFS
+	find . | cpio --quiet -o -H newc | xz $XZ_OPTS > $INITRAMFS
 	cd
 	rm -r $INITRAM_DIR
 fi
