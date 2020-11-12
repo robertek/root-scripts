@@ -37,7 +37,8 @@ BINS="	/sbin/zpool
 	/usr/sbin/mkfs.fat
 	"
 
-EXTRA=""
+EXTRA=" /lib/firmware/i915/*
+	"
 
 echo "composing initramfs in $INITRAM_DIR"
 
