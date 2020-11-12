@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# settings
+RELEASE="3.12"
+MINOR="1"
+
+# vars
+ISO="alpine-extended-$RELEASE.$MINOR-x86_64.iso"
+URL="http://dl-cdn.alpinelinux.org/alpine/v$RELEASE/releases/x86_64/$ISO"
+TMP="/var/tmp/alpine"
+BOOT="/boot"
+
+
+### main
+
+## extract iso
+mkdir $TMP
+cd $TMP
+wget $URL || exit 1
+7z x $ISO || exit 1
+rm -r '[BOOT]' efi boot/grub boot/syslinux $ISO || exit 1
+
+## clean old alpine
+rm -r $BOOT/boot/*-lts*
+rm -r $BOOT/apks
+
+## install new alpine
+cp -r $TMP/* $BOOT
+
+## clean
+rm -r $TMP
