@@ -1,6 +1,7 @@
 #!/bin/busybox sh
 
 ZPOOL="/sbin/zpool"
+ZFS="/sbin/zfs"
 BUSYBOX="/bin/busybox"
 CAT="$BUSYBOX cat"
 CUT="$BUSYBOX cut"
@@ -48,7 +49,7 @@ RPOOL=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "rpool=" | $CUT -d"=" -f2`
 [[ -z $RPOOL ]] && RPOOL=`$ECHO $ROOT | $CUT -d"/" -f1`
 [[ -z $RPOOL ]] && RPOOL="rpool"
 
-[[ $PLYMOUTH == 1 ]] || $ECHO "Importing: $RPOOL"
+[[ -z $PLYMOUTH ]] && $ECHO "Importing: $RPOOL"
 
 if [[ -f /etc/$RPOOL.cache ]]
 then
@@ -57,16 +58,23 @@ else
 	$ZPOOL import -N $RPOOL
 fi
 
+if [[ -z $PLYMOUTH ]]
+then
+	$ZFS load-key -a
+else
+	/usr/bin/plymouth ask-for-password --command="$ZFS load-key -a" --prompt="Enter $RPOOL password:"
+fi
+
 [[ -z $ROOT ]] && ROOT=`$ZPOOL get -H bootfs $RPOOL | $TR -s "\t" ":" | $CUT -d: -f3`
 
-[[ $PLYMOUTH == 1 ]] || $ECHO "Mounting: $ROOT"
+[[ -z $PLYMOUTH ]] && $ECHO "Mounting: $ROOT"
 /sbin/mount.zfs $ROOT /newroot
 
 # rescue shell if mount fail
 [[ $? -ne 0 ]] && $BUSYBOX --install -s && $SH
 
 # plymouth newroot
-[[ $PLYMOUTH == 1 ]] && /usr/bin/plymouth --newroot=/newroot
+[[ -z $PLYMOUTH ]] || /usr/bin/plymouth --newroot=/newroot
 
 # unmount pseudo FS
 $UMOUNT /sys
