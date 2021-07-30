@@ -59,7 +59,7 @@ function sync_dataset {
 	$ZFS snapshot $NEW_BACKUP || exit 1
 
 	# send new snapshot
-	$ZFS send -ce $SEND_PARAM | $ZFSR receive -Feuv $REMOTE_DATASET
+	$ZFS send $SEND_PARAM | $ZFSR receive -Feuv $REMOTE_DATASET
 
 	# check if done
 	$ZFSR list -t snapshot | grep $NEW_BACKUP_SNAP >/dev/null 2>&1
@@ -84,7 +84,7 @@ function sync_root {
 	if [ $? -eq 1 ]
 	then
 		$ZFS snapshot $RSNAPSHOT
-		$ZFS send -ce $RSNAPSHOT | $ZFSR receive -euv $REMOTE_RDATASET
+		$ZFS send $RSNAPSHOT | $ZFSR receive -euv $REMOTE_RDATASET
 		echo $?
 		$ZFS destroy $RSNAPSHOT
 	fi
