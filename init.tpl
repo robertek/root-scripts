@@ -58,7 +58,7 @@ else
 	$ZPOOL import -N $RPOOL
 fi
 
-$ZFS get -Hr -o value encryption $RPOOL | %GREP -v off >/dev/null
+$ZFS get -Hr -o value encryption $RPOOL | $GREP -v off >/dev/null
 if [[ $? -eg 0 ]]
 then
 	if [[ -z $PLYMOUTH ]]
