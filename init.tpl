@@ -58,11 +58,15 @@ else
 	$ZPOOL import -N $RPOOL
 fi
 
-if [[ -z $PLYMOUTH ]]
+$ZFS get -Hr -o value encryption $RPOOL | %GREP -v off >/dev/null
+if [[ $? -eg 0 ]]
 then
-	$ZFS load-key -a
-else
-	/usr/bin/plymouth ask-for-password --command="$ZFS load-key -a" --prompt="Enter $RPOOL password:"
+	if [[ -z $PLYMOUTH ]]
+	then
+		$ZFS load-key -a
+	else
+		/usr/bin/plymouth ask-for-password --command="$ZFS load-key -a" --prompt="Enter $RPOOL password:"
+	fi
 fi
 
 [[ -z $ROOT ]] && ROOT=`$ZPOOL get -H bootfs $RPOOL | $TR -s "\t" ":" | $CUT -d: -f3`
