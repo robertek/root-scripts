@@ -34,7 +34,7 @@ fi
 
 # plymouth
 $GREP "splash" /proc/cmdline >/dev/null
-if [[ $? -eq 0 -a -x /usr/sbin/plymouthd -a -x /usr/bin/plymouth ]]
+if [[ $? -eq 0 && -x /usr/sbin/plymouthd && -x /usr/bin/plymouth ]]
 then
 	PLYMOUTH=1
 	$MKDIR -p /run/plymouth
@@ -59,7 +59,7 @@ else
 fi
 
 $ZFS get -Hr -o value encryption $RPOOL | $GREP -v off >/dev/null
-if [[ $? -eg 0 ]]
+if [[ $? -eq 0 ]]
 then
 	if [[ -z $PLYMOUTH ]]
 	then
