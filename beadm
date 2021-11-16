@@ -804,6 +804,10 @@ EOF
     if [ ${#} -eq 2 ]
     then
       TARGET=${2}
+    elif [ ${#} -eq 3 ]
+    then
+      TARGET=${2}
+      CMD=${3}
     else
       __usage
     fi
@@ -823,7 +827,12 @@ EOF
       then
         mount -t squashfs $PORTAGE_FILE $PORTAGE_DIR
       fi
-      systemd-nspawn -D $MNT $BINDS /bin/zsh
+      if [ -z "$CMD" ]
+      then
+        systemd-nspawn -D $MNT $BINDS /bin/zsh
+      else
+        systemd-nspawn -D $MNT $BINDS /bin/zsh -c "$CMD"
+      fi
       if [[ -e $PORTAGE_FILE ]]
       then
         umount $PORTAGE_DIR
