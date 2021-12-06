@@ -4,9 +4,14 @@ MIRROR="https://mirror.dkm.cz/gentoo"
 URL="$MIRROR/snapshots/squashfs/gentoo-current.xz.sqfs"
 SQFS_PATH="/var/lib/portage/gentoo.xz.sqfs"
 
+[[ $1 == "-n" ]] && ONLY_MOUNT=1
+
 beadm create root-tmp
 BEDIR=`beadm mount root-tmp`
 wget $URL -O $BEDIR/$SQFS_PATH
-beadm chroot root-tmp "eix-sync -uq ; eix -uc"
-beadm umount root-tmp
-beadm destroy -F root-tmp
+if [[ -z $ONLY_MOUNT ]]
+then
+	beadm chroot root-tmp "eix-sync -uq ; EIX_LIMIT_COMPACT=0 eix -uc"
+	beadm umount root-tmp
+	beadm destroy -F root-tmp
+fi
