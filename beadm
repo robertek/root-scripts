@@ -811,6 +811,8 @@ EOF
     else
       __usage
     fi
+    USER_SHELL=`getent passwd $USER | cut -d ":" -f7`
+    PROPERTIES="--property=CPUQuota=400% --property=MemoryHigh=4G"
     __be_exist "${POOL}/${BEDS}/${2}"
     if __be_mounted "${POOL}/${BEDS}/${2}"
     then
@@ -829,9 +831,9 @@ EOF
       fi
       if [ -z "$CMD" ]
       then
-        systemd-nspawn -D $MNT $BINDS /bin/zsh
+        systemd-nspawn -D $MNT $PROPERTIES $BINDS $USER_SHELL
       else
-        systemd-nspawn -D $MNT $BINDS /bin/zsh -c "$CMD"
+        systemd-nspawn -D $MNT $PROPERTIES $BINDS $USER_SHELL -c "$CMD"
       fi
       if [[ -e $PORTAGE_FILE ]]
       then
