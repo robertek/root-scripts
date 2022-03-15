@@ -1,6 +1,6 @@
 #!/bin/sh
 
-MIRROR="https://mirror.dkm.cz/gentoo"
+MIRROR="http://ftp.fi.muni.cz/pub/linux/gentoo"
 URL="$MIRROR/snapshots/squashfs/gentoo-current.xz.sqfs"
 SQFS_PATH="/var/lib/portage/gentoo.xz.sqfs"
 
