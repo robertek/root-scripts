@@ -1,8 +1,8 @@
 #!/bin/sh
 
 KERNEL_BASE="5.10"
-KERNEL_VER="5.10.72"
-ZFS_VER="2.0.6"
+KERNEL_VER="5.10.105"
+ZFS_VER="2.1.3"
 
 BUILD_PATH="/var/tmp/portage/kernel"
 CONFIG_TPL="/root/bin/config-base"
