@@ -1,0 +1,26 @@
+#!/bin/sh
+
+ATOM=$1
+
+[ -z $ATOM ] && { echo "Usage: $0 pkg_name"; exit 1; }
+
+source /etc/portage/make.conf
+
+[ -z $PORTAGE_LOGDIR ] && { echo "Build logs not enabled. Set PORTAGE_LOGDIR in /etc/portage/make.conf."; exit 1; }
+
+if echo $ATOM | grep "/" >/dev/null
+then
+	REGEX="$ATOM-[0-9]"
+else
+	REGEX="/$ATOM-[0-9]"
+fi
+
+PKG=`eix-installed -q all | grep $REGEX | tr '/' ':'`
+BUILD_FILES="$PORTAGE_LOGDIR/$PKG*"
+
+[ -z $PKG ] && { echo "No package matched."; exit 1; }
+[ `echo $PKG | wc -l` != "1" ] && { echo "More than one package matched, please specify.\n $PKG"; exit 1; }
+
+ls $BUILD_FILES >/dev/null 2>&1 || { echo "No build log for $PKG"; exit 1; }
+
+less $BUILD_FILES
