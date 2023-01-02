@@ -1,8 +1,9 @@
 #!/bin/sh
 
-KERNEL_BASE="5.10"
-KERNEL_VER="5.10.105"
-ZFS_VER="2.1.3"
+KERNEL_BASE="6.1"
+#KERNEL_VER="6.1.2"
+KERNEL_VER=`curl https://cdn.kernel.org/pub/linux/kernel/v6.x/ 2>/dev/null | grep 'patch-6.1.[0-9]' | sed 's/.*\(6.1.[0-9]\+\).*/\1/' | tail -1`
+ZFS_VER="2.1.6"
 
 BUILD_PATH="/var/tmp/portage/kernel"
 CONFIG_TPL="/root/bin/config-base"
@@ -10,7 +11,7 @@ DISTFILES="/var/lib/portage/distfiles"
 
 KERNEL_SRC_TAR="linux-$KERNEL_BASE.tar.xz"
 KERNEL_PATCH="patch-$KERNEL_VER.xz"
-KERNEL_SRC_URL="https://cdn.kernel.org/pub/linux/kernel/v5.x"
+KERNEL_SRC_URL="https://cdn.kernel.org/pub/linux/kernel/v6.x"
 ZFS_SRC_TAR="zfs-$ZFS_VER.tar.gz"
 ZFS_SRC_URL="https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZFS_VER"
 
@@ -74,6 +75,7 @@ make_linux() {
 
 
 mkdir $BUILD_PATH
+echo "Created building path in $BUILD_PATH"
 
 fetch_linux
 
