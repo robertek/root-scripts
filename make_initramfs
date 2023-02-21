@@ -38,6 +38,7 @@ BINS="	/sbin/zpool
 	"
 
 EXTRA=" /lib/firmware/i915/*
+	/etc/hostid
 	"
 
 echo "composing initramfs in $INITRAM_DIR"
