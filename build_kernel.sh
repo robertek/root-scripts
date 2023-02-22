@@ -3,7 +3,7 @@
 KERNEL_BASE="6.1"
 #KERNEL_VER="6.1.2"
 KERNEL_VER=`curl https://cdn.kernel.org/pub/linux/kernel/v6.x/ 2>/dev/null | grep 'patch-6.1.[0-9]' | sed 's/.*\(6.1.[0-9]\+\).*/\1/' | tail -1`
-ZFS_VER="2.1.6"
+ZFS_VER="2.1.9"
 
 BUILD_PATH="/var/tmp/portage/kernel"
 CONFIG_TPL="/root/bin/config-base"
@@ -13,11 +13,13 @@ KERNEL_SRC_TAR="linux-$KERNEL_BASE.tar.xz"
 KERNEL_PATCH="patch-$KERNEL_VER.xz"
 KERNEL_SRC_URL="https://cdn.kernel.org/pub/linux/kernel/v6.x"
 ZFS_SRC_TAR="zfs-$ZFS_VER.tar.gz"
-ZFS_SRC_URL="https://github.com/zfsonlinux/zfs/releases/download/zfs-$ZFS_VER"
+ZFS_SRC_URL="https://github.com/openzfs/zfs/releases/download/zfs-$ZFS_VER"
 
 LINUX=$BUILD_PATH/linux-$KERNEL_BASE
 ZFS=$BUILD_PATH/zfs-$ZFS_VER
 
+BASE_INITRAMFS=/boot/initramfs
+INITRAMFS=/boot/initramfs-${KERNEL_VER}
 
 download() {
 	[ -f $DISTFILES/$2 ] || wget $1/$2 -O $DISTFILES/$2
@@ -68,9 +70,12 @@ make_linux() {
 	make olddefconfig || exit 1
 	make -j4 || exit 1
 
-	echo "Install kernel"
-	make install
+	echo "Install modules"
 	make modules_install
+
+	echo "Install kernel"
+	cp -f System.map /boot/System.map-$KERNEL_VER
+	cp -f arch/x86/boot/bzImage /boot/vmlinuz-$KERNEL_VER
 }
 
 
@@ -83,5 +88,8 @@ fetch_zfs
 patch_zfs
 
 make_linux
+
+# link initramfs
+[ -f $INITRAMFS ] || ln $BASE_INITRAMFS $INITRAMFS
 
 rm -r $BUILD_PATH
