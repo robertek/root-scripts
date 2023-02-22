@@ -1,8 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 ROOT=/boot
-VERSION=`equery -q list zfs | cut -d"-" -f3`
-INITRAMFS="$ROOT/initramfs-$VERSION"
+INITRAMFS="$ROOT/initramfs"
 XZ_OPTS="--check=crc32 --lzma2=dict=512KiB"
 
 if [ -z $1 ]
@@ -18,28 +17,40 @@ DIRS="	sys
 	proc
 	dev
 	etc
-	bin
-	lib
-	lib64
 	newroot
-	sbin
 	usr/lib
-	usr/lib64
 	usr/bin
-	usr/sbin
 	"
+
+declare -A LINKS=(
+	[bin]="usr/bin"
+	[sbin]="usr/bin"
+	[usr/sbin]="bin"
+	[lib]="usr/lib"
+	[lib64]="usr/lib"
+	[usr/lib64]="lib"
+)
 
 BINS="	/sbin/zpool
 	/sbin/mount.zfs
 	/sbin/zfs
 	/bin/busybox
-	/sbin/fdisk
-	/usr/sbin/mkfs.fat
+	/lib/libgcc_s.so.1
 	"
 
-EXTRA=" /lib/firmware/i915/*
-	/etc/hostid
+EXTRA=" /etc/hostid
 	"
+declare -A LIBS=()
+
+resolve_libs() {
+	for lib in `objdump -p $1 | grep NEEDED | sed 's/\s\+NEEDED\s\+//'`
+	do
+		if [[ ! -n "${LIBS[/lib/${lib}]}" ]]
+		then
+			LIBS[/lib/${lib}]=0;
+		fi
+	done
+}
 
 echo "composing initramfs in $INITRAM_DIR"
 
@@ -58,13 +69,31 @@ do
 	mkdir -p $INITRAM_DIR/$dir
 done
 
-for bin in `lddtree -l $BINS 2>/dev/null | sort -u`
+for link in ${!LINKS[@]}
 do
-	cp -L $bin ${INITRAM_DIR}/$bin
+	ln -s ${LINKS[$link]} $INITRAM_DIR/${link}
 done
 
-# fix gcc link
-cp -L `find /usr/lib/gcc -name "libgcc_s.so.1" | head -n1` $INITRAM_DIR/lib64/
+for bin in ${BINS}
+do
+	echo "\tresolving $bin"
+	cp $bin ${INITRAM_DIR}/$bin
+	resolve_libs $bin
+done
+
+for i in {1..10}
+do
+	for lib in ${!LIBS[@]}
+	do
+		if [[ ${LIBS[${lib}]} == 0 ]]
+		then
+			echo "\tresolving $lib"
+			cp -L $lib ${INITRAM_DIR}/$lib
+			LIBS[${lib}]=1;
+			resolve_libs $lib
+		fi
+	done
+done
 
 # add /dev/console
 mknod $INITRAM_DIR/dev/console c 5 1 2>/dev/null

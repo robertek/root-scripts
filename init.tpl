@@ -43,7 +43,7 @@ then
 fi
 
 # zfs
-ROOT=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "root=" | $CUT -d"=" -f2`
+ROOT=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "root=zfs" | $CUT -d"=" -f3`
 RPOOL=`$CAT /proc/cmdline | $TR " " "\n" | $GREP "rpool=" | $CUT -d"=" -f2`
 
 [[ -z $RPOOL ]] && RPOOL=`$ECHO $ROOT | $CUT -d"/" -f1`
@@ -85,4 +85,4 @@ $UMOUNT /sys
 $UMOUNT /proc
 
 # root switch
-exec $SWITCH_ROOT /newroot /usr/lib/systemd/systemd
+exec $SWITCH_ROOT /newroot /sbin/init
