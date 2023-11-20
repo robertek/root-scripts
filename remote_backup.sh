@@ -4,18 +4,19 @@
 # example usage:
 #
 # REMOTE_IP="1.2.3.4"
-# NETDEV="enp0s31f6"
 # PORT=8022
 #
 # . /path/to/remote_backup.sh
 #
 # SNAP_NAME="backup-done"
-# REMOTE_DATASET="wpool/BACKUP/home"
+# REMOTE_DATASET="bpool/BACKUP/home"
 # LOCAL_DATASET="rpool/HOME"
 # sync_dataset
 # 
-# REMOTE_RDATASET="wpool/BACKUP/notebook_root"
-# sync_root
+# REMOTE_DATASET="bpool/BACKUP/machine_name"
+# LOCAL_DATASET="rpool/SYSTEM/root"
+# PREFIX="update-"
+# sync_dataset_extern
 ################################################################################
 
 ZFS="/sbin/zfs"
@@ -33,11 +34,11 @@ REMOTE_HOST="root@$REMOTE_IP"
 ZFSR="$SSH $REMOTE_HOST $ZFS"
 SNAP_NAME="backup-done"
 
-function check_host {
-	ping -c1 $REMOTE_IP -I $NETDEV || exit 1
+check_host() {
+	ping -c1 $REMOTE_IP || exit 1
 }
 
-function sync_dataset {
+sync_dataset() {
 	check_host
 
 	LAST_BACKUP="$LOCAL_DATASET@$SNAP_NAME"
@@ -52,8 +53,6 @@ function sync_dataset {
 	else
 		SEND_PARAM="$NEW_BACKUP"
 	fi
-
-	#return
 
 	# create new snapshot
 	$ZFS snapshot $NEW_BACKUP || exit 1
@@ -72,20 +71,46 @@ function sync_dataset {
 	fi
 }
 
-function sync_root {
+
+# sync dataset with existing snapshots
+#
+# variables:
+#   LOCAL_DATASET
+#   REMOTE_DATASET
+#   PREFIX
+sync_dataset_extern() {
+	[ -z ${LOCAL_DATASET} ] && exit 1
+	[ -z ${REMOTE_DATASET} ] && exit 1
+	[ -z ${PREFIX} ] && exit 1
+
 	check_host
 
-	RDATASET=`$BEADM list -a | perl -ne 'if (/NR/) { s/\s*(\S+)\s+.*/\1/ ; print }'`
-	RNAME=`basename $RDATASET`
-	RSNAPSHOT="${RDATASET}@copy"
+	NEW_SNAPSHOT=`${ZFS} list -o name -t snapshot ${LOCAL_DATASET} | grep ${PREFIX} | tail -1 | cut -d@ -f2`
+	LOCAL_DATASET_NOPOOL=`echo ${LOCAL_DATASET} | cut -d/ -f2-`
 
-	# send new root if not already backed up
-	$ZFSR list | grep $REMOTE_RDATASET/$RNAME >/dev/null 2>&1
-	if [ $? -eq 1 ]
+	# check for initail snapshot
+	${ZFSR} list ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL} >/dev/null 2>&1
+	if [ $? -eq 0 ]
 	then
-		$ZFS snapshot $RSNAPSHOT
-		$ZFS send $RSNAPSHOT | $ZFSR receive -euv $REMOTE_RDATASET
-		echo $?
-		$ZFS destroy $RSNAPSHOT
+		OLD_SNAPSHOT=`${ZFSR} list -o name -t snapshot ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL} | grep ${PREFIX} | tail -1 | cut -d@ -f2`
+		SEND_PARAM="-i ${LOCAL_DATASET}@${OLD_SNAPSHOT} ${LOCAL_DATASET}@${NEW_SNAPSHOT}"
+		[ ${OLD_SNAPSHOT} = ${NEW_SNAPSHOT} ] && return
+	else
+		SEND_PARAM="${LOCAL_DATASET}@${NEW_SNAPSHOT}"
+	fi
+
+	# hold the local snapshot
+	${ZFS} hold backup ${LOCAL_DATASET}@${NEW_SNAPSHOT}
+
+	# send the new snapshot
+	${ZFS} send ${SEND_PARAM} | ${ZFSR} receive -Fduv ${REMOTE_DATASET}
+
+	# check if done
+	${ZFSR} list -t snapshot ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL}@${NEW_SNAPSHOT} >/dev/null 2>&1
+	if [ $? -eq 0 ]
+	then
+		[ -z ${OLD_SNAPSHOT} ] || ${ZFS} release backup ${LOCAL_DATASET}@${OLD_SNAPSHOT}
+	else
+		${ZFS} release backup ${LOCAL_DATASET}@${NEW_SNAPSHOT}
 	fi
 }
