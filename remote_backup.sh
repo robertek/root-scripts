@@ -103,13 +103,17 @@ sync_dataset_extern() {
 	${ZFS} hold backup ${LOCAL_DATASET}@${NEW_SNAPSHOT}
 
 	# send the new snapshot
-	${ZFS} send ${SEND_PARAM} | ${ZFSR} receive -Fduv ${REMOTE_DATASET}
+	${ZFS} send -h ${SEND_PARAM} | ${ZFSR} receive -Fduv ${REMOTE_DATASET}
 
 	# check if done
 	${ZFSR} list -t snapshot ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL}@${NEW_SNAPSHOT} >/dev/null 2>&1
 	if [ $? -eq 0 ]
 	then
-		[ -z ${OLD_SNAPSHOT} ] || ${ZFS} release backup ${LOCAL_DATASET}@${OLD_SNAPSHOT}
+		if [ ! -z ${OLD_SNAPSHOT} ]
+		then
+			${ZFS} release backup ${LOCAL_DATASET}@${OLD_SNAPSHOT}
+			${ZFSR} release backup ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL}@${OLD_SNAPSHOT}
+		fi
 	else
 		${ZFS} release backup ${LOCAL_DATASET}@${NEW_SNAPSHOT}
 	fi
