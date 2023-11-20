@@ -35,7 +35,7 @@ ZFSR="$SSH $REMOTE_HOST $ZFS"
 SNAP_NAME="backup-done"
 
 check_host() {
-	ping -c1 $REMOTE_IP || exit 1
+	ping -c1 $REMOTE_IP >/dev/null || exit 1
 }
 
 sync_dataset() {
