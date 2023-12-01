@@ -85,14 +85,14 @@ sync_dataset_extern() {
 
 	check_host
 
-	NEW_SNAPSHOT=`${ZFS} list -o name -t snapshot ${LOCAL_DATASET} | grep ${PREFIX} | tail -1 | cut -d@ -f2`
+	NEW_SNAPSHOT=`${ZFS} list -o name -t snapshot ${LOCAL_DATASET} | grep "${PREFIX}" | tail -1 | cut -d@ -f2`
 	LOCAL_DATASET_NOPOOL=`echo ${LOCAL_DATASET} | cut -d/ -f2-`
 
 	# check for initail snapshot
 	${ZFSR} list ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL} >/dev/null 2>&1
 	if [ $? -eq 0 ]
 	then
-		OLD_SNAPSHOT=`${ZFSR} list -o name -t snapshot ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL} | grep ${PREFIX} | tail -1 | cut -d@ -f2`
+		OLD_SNAPSHOT=`${ZFSR} list -o name -t snapshot ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL} | grep "${PREFIX}" | tail -1 | cut -d@ -f2`
 		SEND_PARAM="-i ${LOCAL_DATASET}@${OLD_SNAPSHOT} ${LOCAL_DATASET}@${NEW_SNAPSHOT}"
 		[ ${OLD_SNAPSHOT} = ${NEW_SNAPSHOT} ] && return
 	else
@@ -103,7 +103,7 @@ sync_dataset_extern() {
 	${ZFS} hold backup ${LOCAL_DATASET}@${NEW_SNAPSHOT}
 
 	# send the new snapshot
-	${ZFS} send -h ${SEND_PARAM} | ${ZFSR} receive -Fduv ${REMOTE_DATASET}
+	${ZFS} send -hw ${SEND_PARAM} | ${ZFSR} receive -Fduv ${REMOTE_DATASET}
 
 	# check if done
 	${ZFSR} list -t snapshot ${REMOTE_DATASET}/${LOCAL_DATASET_NOPOOL}@${NEW_SNAPSHOT} >/dev/null 2>&1
